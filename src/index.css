@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-magenta: #d4145a;
+    --color-magenta-dark: #a10e43;
+    --color-gold: #b3925d;
+    --color-gold-light: #d4b57e;
+    --color-gold-dark: #8c6e3d;
+    --color-imperial: #141211;
+    --color-imperial-light: #24201e;
+  }
+
+  body {
+    background-color: #faf8f5;
+    color: #1a1715;
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  h1, h2, h3, .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+/* Custom scrollbar for horizontal category scrolls */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gold Gradient Shimmer */
+.gold-gradient {
+  background: linear-gradient(135deg, #c5a059 0%, #ecd08c 50%, #b3925d 100%);
+}
+
+.gold-text-gradient {
+  background: linear-gradient(135deg, #b3925d 0%, #e0c58e 50%, #9e7a41 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.imperial-dark-gradient {
+  background: linear-gradient(145deg, #181615 0%, #26211e 100%);
+}
+
+.magenta-gradient {
+  background: linear-gradient(135deg, #d4145a 0%, #b80f4c 100%);
+}

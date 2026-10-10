@@ -1,0 +1,6 @@
+{
+  "name": "Imperio Florigan - Catálogo & Pedidos",
+  "description": "Plataforma imperial para vendedoras y clientes de Florigan: catálogo oficial en tiempo real, cotizador de envíos nacionales por peso, carrito, analítica y reportes PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
