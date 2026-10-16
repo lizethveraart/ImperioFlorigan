@@ -12,6 +12,9 @@ import {
 } from '../types';
 import { INITIAL_PRODUCTS } from '../data/catalog';
 
+import { ShippingCarrierRate } from '../types';
+import { DEFAULT_CARRIER_RATES } from '../data/mexicoShipping';
+
 interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
@@ -43,6 +46,10 @@ interface AppContextType {
   markAllNotificationsAsRead: () => void;
   pushNotificationsEnabled: boolean;
   setPushNotificationsEnabled: (enabled: boolean) => void;
+  activePushToast: AppNotification | null;
+  dismissPushToast: () => void;
+  dispatchPushNotification: (notif: AppNotification) => void;
+  requestBrowserPushPermission: () => Promise<boolean>;
   currentTab: 'catalog' | 'clients' | 'orders' | 'admin' | 'analytics' | 'profile';
   setCurrentTab: (tab: 'catalog' | 'clients' | 'orders' | 'admin' | 'analytics' | 'profile') => void;
   getMonthlyReport: (monthKey?: string) => MonthlyReportData;
@@ -50,39 +57,48 @@ interface AppContextType {
   setIsCartOpen: (open: boolean) => void;
   isAuthOpen: boolean;
   setIsAuthOpen: (open: boolean) => void;
+  isAdminAuthOpen: boolean;
+  setIsAdminAuthOpen: (open: boolean) => void;
+  isNavigationDrawerOpen: boolean;
+  setIsNavigationDrawerOpen: (open: boolean) => void;
+  shippingRates: ShippingCarrierRate[];
+  updateShippingRate: (carrier: string, updates: Partial<ShippingCarrierRate>) => void;
+  loginAsAdmin: (email: string, pass: string) => { success: boolean; error?: string };
+  loginWithGoogle: (email?: string, name?: string) => void;
+  logout: () => void;
 }
 
 const DEFAULT_USERS: Record<UserRole, User> = {
-  vendedor: {
-    id: 'usr-vnd-01',
-    name: 'Lizeth Emperatriz',
-    email: 'Ing.lizethvera@gmail.com',
-    role: 'vendedor',
-    phone: '33 1071 1718',
-    vendorLevel: 'Emperatriz Oro',
-    commissionRate: 0.35,
-    city: 'Guadalajara',
-    state: 'Jalisco (Matriz Guadalajara)',
-    creditLimit: 15000,
-    availableCredit: 9850,
-  },
   cliente: {
-    id: 'usr-cli-02',
+    id: 'usr-cli-01',
     name: 'Carolina Velasco',
-    email: 'carolina.velasco@gmail.com',
+    email: 'contacto@imperioflorigan.com',
     role: 'cliente',
-    phone: '55 4321 8976',
-    city: 'Ciudad de México',
-    state: 'Ciudad de México',
+    phone: '000 000 0000',
+    city: 'Irapuato',
+    state: 'Guanajuato',
+    address: 'Av. Guerrero 1500, Col. Jardines de Irapuato',
+    postalCode: '36660',
+    authProvider: 'google',
   },
   admin: {
     id: 'usr-adm-00',
-    name: 'Gerencia General Florigan',
-    email: 'direccion@florigan.com.mx',
+    name: 'Administración Imperio Florigan',
+    email: 'ventas@imperioflorigan.com',
     role: 'admin',
-    phone: '33 3619 0000',
-    city: 'Guadalajara',
-    state: 'Jalisco (Matriz Guadalajara)',
+    phone: '000 000 0000',
+    city: 'Irapuato',
+    state: 'Guanajuato',
+    address: 'Irapuato, Guanajuato, México',
+  },
+  vendedor: {
+    id: 'usr-cli-01',
+    name: 'Carolina Velasco',
+    email: 'contacto@imperioflorigan.com',
+    role: 'cliente',
+    phone: '000 000 0000',
+    city: 'Irapuato',
+    state: 'Guanajuato',
   },
 };
 
@@ -95,7 +111,7 @@ const INITIAL_CLIENTS: ClientProfile[] = [
     email: 'martha.solis@outlook.com',
     address: 'Av. Chapultepec 410, Col. Americana',
     city: 'Guadalajara',
-    state: 'Jalisco (Matriz Guadalajara)',
+    state: 'Jalisco',
     postalCode: '44160',
     skinType: 'Seca y sensible con manchas de sol',
     preferredCategories: ['Facial', 'Capilar'],
@@ -144,16 +160,16 @@ const INITIAL_ORDERS: Order[] = [
   {
     id: 'ord-101',
     orderNumber: 'FLR-8420',
-    date: '2026-10-02 11:30',
+    date: '2026-10-14 18:20',
     monthKey: '2026-10',
-    userId: 'usr-vnd-01',
-    userRole: 'vendedor',
-    clientName: 'Martha Solís Ramírez',
-    clientPhone: '33 1245 9901',
-    clientAddress: 'Av. Chapultepec 410, Col. Americana',
-    clientCity: 'Guadalajara',
-    clientState: 'Jalisco (Matriz Guadalajara)',
-    clientPostalCode: '44160',
+    userId: 'usr-cli-01',
+    userRole: 'cliente',
+    clientName: 'Carolina Velasco',
+    clientPhone: '000 000 0000',
+    clientAddress: 'Av. Guerrero 1500, Col. Jardines',
+    clientCity: 'Irapuato',
+    clientState: 'Guanajuato',
+    clientPostalCode: '36660',
     items: [
       {
         productId: 'flr-018',
@@ -179,29 +195,30 @@ const INITIAL_ORDERS: Order[] = [
     subtotalCatalog: 1233,
     subtotalWholesale: 801,
     vendorCommission: 432,
-    shippingCost: 0,
-    shippingCarrier: 'Punto Matriz Guadalajara',
+    shippingCost: 115,
+    shippingCarrier: 'RedPack Terrestre',
     totalWeightGrams: 1990,
-    grandTotal: 1233,
-    paymentMethod: 'florigan_credit',
+    grandTotal: 1348,
+    paymentMethod: 'spei',
     paymentStatus: 'Aprobado',
-    paymentReference: 'CRED-LIZETH-8420',
-    status: 'Entregado',
-    trackingNumber: 'ENTREGA-LOCAL-GDL',
+    paymentReference: 'SPEI-RPK-8420',
+    status: 'En Ruta de Entrega',
+    trackingNumber: 'RPK-881920311MX',
+    notes: 'Envío prioritario con entrega en domicilio',
   },
   {
     id: 'ord-102',
     orderNumber: 'FLR-8421',
     date: '2026-10-05 16:45',
     monthKey: '2026-10',
-    userId: 'usr-vnd-01',
-    userRole: 'vendedor',
-    clientName: 'Roberto Valenzuela Flores',
-    clientPhone: '81 1928 3746',
-    clientAddress: 'Paseo de los Leones 1250, Cumbres',
-    clientCity: 'Monterrey',
-    clientState: 'Nuevo León',
-    clientPostalCode: '64610',
+    userId: 'usr-cli-01',
+    userRole: 'cliente',
+    clientName: 'Carolina Velasco',
+    clientPhone: '000 000 0000',
+    clientAddress: 'Av. Guerrero 1500, Col. Jardines',
+    clientCity: 'Irapuato',
+    clientState: 'Guanajuato',
+    clientPostalCode: '36660',
     items: [
       {
         productId: 'flr-001',
@@ -209,9 +226,9 @@ const INITIAL_ORDERS: Order[] = [
         size: '1 Lt',
         unitPrice: 459,
         wholesaleUnitPrice: 298,
-        quantity: 2,
-        subtotal: 918,
-        weightGrams: 2160,
+        quantity: 1,
+        subtotal: 459,
+        weightGrams: 1080,
       },
       {
         productId: 'flr-040',
@@ -224,32 +241,33 @@ const INITIAL_ORDERS: Order[] = [
         weightGrams: 840,
       },
     ],
-    subtotalCatalog: 1396,
-    subtotalWholesale: 906,
-    vendorCommission: 490,
+    subtotalCatalog: 937,
+    subtotalWholesale: 609,
+    vendorCommission: 328,
     shippingCost: 206,
     shippingCarrier: 'FedEx Express',
-    totalWeightGrams: 3000,
-    grandTotal: 1602,
-    paymentMethod: 'card',
+    totalWeightGrams: 1920,
+    grandTotal: 1143,
+    paymentMethod: 'oxxo',
     paymentStatus: 'Aprobado',
-    paymentReference: 'TXN-FDX-99412',
+    paymentReference: 'OXXO-FDX-99412',
     status: 'Enviado con Guía',
     trackingNumber: 'FDX-773829104MX',
+    notes: 'Guía express con firma requerida',
   },
   {
     id: 'ord-103',
     orderNumber: 'FLR-8395',
     date: '2026-09-28 14:15',
     monthKey: '2026-09',
-    userId: 'usr-vnd-01',
-    userRole: 'vendedor',
-    clientName: 'Brenda Orozco Guzmán',
-    clientPhone: '55 9812 3456',
-    clientAddress: 'Calle Durango 88, Col. Roma Norte',
-    clientCity: 'Ciudad de México',
-    clientState: 'Ciudad de México',
-    clientPostalCode: '06700',
+    userId: 'usr-cli-01',
+    userRole: 'cliente',
+    clientName: 'Carolina Velasco',
+    clientPhone: '000 000 0000',
+    clientAddress: 'Av. Guerrero 1500, Col. Jardines',
+    clientCity: 'Irapuato',
+    clientState: 'Guanajuato',
+    clientPostalCode: '36660',
     items: [
       {
         productId: 'flr-059',
@@ -275,25 +293,48 @@ const INITIAL_ORDERS: Order[] = [
     subtotalCatalog: 968,
     subtotalWholesale: 629,
     vendorCommission: 339,
-    shippingCost: 145,
+    shippingCost: 165,
     shippingCarrier: 'Estafeta',
     totalWeightGrams: 810,
-    grandTotal: 1113,
+    grandTotal: 1133,
     paymentMethod: 'spei',
     paymentStatus: 'Aprobado',
     paymentReference: 'SPEI-BNMX-4819',
     status: 'Entregado',
     trackingNumber: 'EST-992147321MX',
+    notes: 'Entregado satisfactoriamente',
   },
 ];
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
+    id: 'notif-admin-1',
+    title: '✨ ¡Nuevo Producto en Catálogo Florigan!',
+    message: 'La administración ha publicado "Crema Protectora UV Hidratante Ligera (1 Kg y 1 Lt)" con 35% de margen para vendedoras. ¡Ya disponible para tus pedidos!',
+    type: 'new_product',
+    timestamp: 'Hace 5 minutos',
+    read: false,
+    productName: 'Crema Protectora UV Hidratante Ligera',
+    targetRole: 'vendedor',
+    adminAuthor: 'Gerencia General Florigan',
+  },
+  {
+    id: 'notif-admin-2',
+    title: '📦 ¡Inventario Resurtido por Administración!',
+    message: 'Se han resurtido +30 unidades de Crema Baba de Caracol (350 gr) y Shampoo Bergamota en almacén central. Las vendedoras ya pueden surtir pedidos.',
+    type: 'inventory_update',
+    timestamp: 'Hace 20 minutos',
+    read: false,
+    productName: 'Crema Baba de Caracol',
+    targetRole: 'vendedor',
+    adminAuthor: 'Gerencia General Florigan',
+  },
+  {
     id: 'notif-1',
     title: '⚠️ Alerta Automática de Stock Bajo',
     message: 'Shampoo Bergamota (350 ml) cuenta con solo 4 unidades en inventario. Se recomienda resurtir.',
     type: 'stock_alert',
-    timestamp: 'Hace 10 minutos',
+    timestamp: 'Hace 45 minutos',
     read: false,
   },
   {
@@ -301,7 +342,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     title: '⚠️ Stock Crítico: Aceite Rosa Mosqueta',
     message: 'Aceite Anti-Edad Rosa Mosqueta (125 ml) cuenta con solo 2 unidades disponibles en bodega.',
     type: 'stock_alert',
-    timestamp: 'Hace 35 minutos',
+    timestamp: 'Hace 1 hora',
     read: false,
   },
   {
@@ -327,7 +368,36 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User>(() => {
     const saved = localStorage.getItem('imperio_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS.vendedor;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed.email === 'direccion@florigan.com.mx' ||
+          parsed.phone === '33 3619 0000' ||
+          parsed.phone === '33 1290 8821' ||
+          parsed.phone === '33 1071 1718' ||
+          parsed.city === 'Guadalajara' ||
+          parsed.state?.includes('Guadalajara') ||
+          parsed.name === 'GERENCIA GENERAL FLORIGAN'
+        ) {
+          const sanitized: User = {
+            ...parsed,
+            name: parsed.name === 'GERENCIA GENERAL FLORIGAN' ? 'Imperio Florigan' : parsed.name,
+            email: parsed.role === 'admin' ? 'ventas@imperioflorigan.com' : 'contacto@imperioflorigan.com',
+            phone: '000 000 0000',
+            city: 'Irapuato',
+            state: 'Guanajuato',
+            address: parsed.address || 'Av. Guerrero 1500, Col. Jardines de Irapuato',
+          };
+          localStorage.setItem('imperio_user', JSON.stringify(sanitized));
+          return sanitized;
+        }
+        return parsed;
+      } catch {
+        return DEFAULT_USERS.cliente;
+      }
+    }
+    return DEFAULT_USERS.cliente;
   });
 
   const [products, setProducts] = useState<Product[]>(() => {
@@ -355,10 +425,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
   });
 
+  const [shippingRates, setShippingRates] = useState<ShippingCarrierRate[]>(() => {
+    const saved = localStorage.getItem('imperio_shipping_rates');
+    return saved ? JSON.parse(saved) : DEFAULT_CARRIER_RATES;
+  });
+
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState<boolean>(true);
+  const [activePushToast, setActivePushToast] = useState<AppNotification | null>(null);
   const [currentTab, setCurrentTab] = useState<'catalog' | 'clients' | 'orders' | 'admin' | 'analytics' | 'profile'>('catalog');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAdminAuthOpen, setIsAdminAuthOpen] = useState(false);
+  const [isNavigationDrawerOpen, setIsNavigationDrawerOpen] = useState(false);
+
+  // Auto-dismiss in-app push toast after 5.5 seconds
+  useEffect(() => {
+    if (activePushToast) {
+      const timer = setTimeout(() => {
+        setActivePushToast(null);
+      }, 5500);
+      return () => clearTimeout(timer);
+    }
+  }, [activePushToast]);
+
+  const dismissPushToast = () => setActivePushToast(null);
+
+  const requestBrowserPushPermission = async (): Promise<boolean> => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const permission = await Notification.requestPermission();
+        const granted = permission === 'granted';
+        setPushNotificationsEnabled(granted);
+        return granted;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  };
+
+  const dispatchPushNotification = (notif: AppNotification) => {
+    setNotifications(prev => [notif, ...prev]);
+
+    // Show floating in-app banner toast
+    setActivePushToast(notif);
+
+    // Trigger Web Browser native push notification if permitted
+    if (pushNotificationsEnabled && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(notif.title, {
+            body: notif.message,
+            icon: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=128&q=80',
+          });
+        } catch (e) {
+          // Handled safely in iframe
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('imperio_user', JSON.stringify(currentUser));
@@ -384,22 +509,117 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('imperio_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
+  useEffect(() => {
+    localStorage.setItem('imperio_shipping_rates', JSON.stringify(shippingRates));
+  }, [shippingRates]);
+
   const switchRole = (newRole: UserRole) => {
     const target = DEFAULT_USERS[newRole];
     setCurrentUser(target);
   };
 
+  const updateShippingRate = (carrier: string, updates: Partial<ShippingCarrierRate>) => {
+    setShippingRates(prev =>
+      prev.map(r => (r.carrier === carrier ? { ...r, ...updates } : r))
+    );
+  };
+
+  const loginAsAdmin = (email: string, pass: string): { success: boolean; error?: string } => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail === 'ventas@imperioflorigan.com' && pass === 'EriPerVan#27') {
+      const adminUser: User = {
+        id: 'usr-adm-00',
+        name: 'Administración Imperio Florigan',
+        email: 'ventas@imperioflorigan.com',
+        role: 'admin',
+        phone: '000 000 0000',
+        city: 'Irapuato',
+        state: 'Guanajuato',
+        address: 'Irapuato, Guanajuato, México',
+      };
+      setCurrentUser(adminUser);
+      setIsAdminAuthOpen(false);
+      setCurrentTab('admin');
+      return { success: true };
+    }
+    return {
+      success: false,
+      error: 'Credenciales inválidas. Solo el correo ventas@imperioflorigan.com con la contraseña autorizada tiene acceso administrativo.',
+    };
+  };
+
+  const loginWithGoogle = (emailParam?: string, nameParam?: string) => {
+    const email = emailParam || 'clienta.florigan@gmail.com';
+    const name = nameParam || email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const googleUser: User = {
+      id: `usr-g-${Date.now()}`,
+      name: name || 'Clienta Imperio Florigan',
+      email: email,
+      role: 'cliente',
+      phone: '000 000 0000',
+      city: 'Irapuato',
+      state: 'Guanajuato',
+      address: 'Av. Guerrero 1500, Col. Jardines de Irapuato',
+      postalCode: '36660',
+      authProvider: 'google',
+    };
+    setCurrentUser(googleUser);
+    setIsAuthOpen(false);
+  };
+
+  const logout = () => {
+    const guestUser: User = {
+      id: `usr-guest-${Date.now()}`,
+      name: 'Clienta Invitada',
+      email: '',
+      role: 'cliente',
+    };
+    setCurrentUser(guestUser);
+    setCurrentTab('catalog');
+  };
+
   const updateProductStock = (productId: string, sku: string, newStock: number) => {
+    let triggeredNotif: AppNotification | null = null;
+
     setProducts(prev => {
-      let triggeredLowStockName = '';
       const updated = prev.map(p => {
         if (p.id === productId) {
           const updatedPres = p.presentations.map(pr => {
             if (pr.sku === sku) {
-              if (newStock <= 5 && pr.stock > 5) {
-                triggeredLowStockName = `${p.name} (${pr.size})`;
+              const prevStock = pr.stock;
+              const nextStock = Math.max(0, newStock);
+
+              // 1) Si fue resurtido por el admin (aumentó el inventario): Alerta Push para vendedoras
+              if (nextStock > prevStock) {
+                const diff = nextStock - prevStock;
+                triggeredNotif = {
+                  id: `rstk-${Date.now()}`,
+                  title: '📦 ¡Inventario Resurtido por Administración!',
+                  message: `Se resurtieron +${diff} pzas de "${p.name} (${pr.size})". Ahora hay ${nextStock} unidades disponibles en almacén. ¡Ya puedes surtir pedidos a tus clientes!`,
+                  type: 'inventory_update',
+                  timestamp: 'Justo ahora',
+                  read: false,
+                  productId: p.id,
+                  productName: p.name,
+                  targetRole: 'vendedor',
+                  adminAuthor: currentUser.name,
+                };
               }
-              return { ...pr, stock: Math.max(0, newStock) };
+              // 2) Si llegó a nivel crítico <= 5: Alerta de stock bajo
+              else if (nextStock <= 5 && prevStock > 5) {
+                triggeredNotif = {
+                  id: `stk-${Date.now()}`,
+                  title: '⚠️ Alerta de Stock Bajo Automática',
+                  message: `El producto "${p.name} (${pr.size})" ha disminuido a solo ${nextStock} unidades en inventario.`,
+                  type: 'stock_alert',
+                  timestamp: 'Justo ahora',
+                  read: false,
+                  productId: p.id,
+                  productName: p.name,
+                };
+              }
+
+              return { ...pr, stock: nextStock };
             }
             return pr;
           });
@@ -408,32 +628,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return p;
       });
 
-      if (triggeredLowStockName && pushNotificationsEnabled) {
-        const notif: AppNotification = {
-          id: `stk-${Date.now()}`,
-          title: '⚠️ Alerta de Stock Bajo Automática',
-          message: `El producto "${triggeredLowStockName}" ha disminuido a solo ${newStock} unidades en inventario.`,
-          type: 'stock_alert',
-          timestamp: 'Justo ahora',
-          read: false,
-        };
-        setNotifications(n => [notif, ...n]);
-      }
-
       return updated;
     });
+
+    if (triggeredNotif) {
+      dispatchPushNotification(triggeredNotif);
+    }
   };
 
   const updateProductPrice = (productId: string, sku: string, newPrice: number) => {
+    let priceNotif: AppNotification | null = null;
+
     setProducts(prev =>
       prev.map(p => {
         if (p.id === productId) {
           const updatedPres = p.presentations.map(pr => {
             if (pr.sku === sku) {
+              const wholesale = Math.round(newPrice * 0.65);
+              priceNotif = {
+                id: `prc-${Date.now()}`,
+                title: `🏷️ Actualización de Precios: ${p.name}`,
+                message: `La administración actualizó el precio de "${p.name} (${pr.size})" a $${newPrice} MXN (Mayoreo Vendedora: $${wholesale} MXN).`,
+                type: 'inventory_update',
+                timestamp: 'Justo ahora',
+                read: false,
+                productId: p.id,
+                productName: p.name,
+                targetRole: 'vendedor',
+                adminAuthor: currentUser.name,
+              };
               return {
                 ...pr,
                 price: newPrice,
-                wholesalePrice: Math.round(newPrice * 0.65),
+                wholesalePrice: wholesale,
               };
             }
             return pr;
@@ -443,14 +670,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return p;
       })
     );
+
+    if (priceNotif) {
+      dispatchPushNotification(priceNotif);
+    }
   };
 
   const addProduct = (product: Product) => {
     setProducts(prev => [product, ...prev]);
+
+    // Push notification para todas las vendedoras
+    const notif: AppNotification = {
+      id: `new-prod-${Date.now()}`,
+      title: '✨ ¡Nuevo Producto en Catálogo Florigan!',
+      message: `La administración ha publicado "${product.name}" (${product.line}) a $${product.presentations[0]?.price} MXN (Precio Mayoreo: $${product.presentations[0]?.wholesalePrice || Math.round(product.presentations[0]?.price * 0.65)} MXN). ¡Ya disponible para tus clientes!`,
+      type: 'new_product',
+      timestamp: 'Justo ahora',
+      read: false,
+      productId: product.id,
+      productName: product.name,
+      targetRole: 'vendedor',
+      adminAuthor: currentUser.name,
+    };
+    dispatchPushNotification(notif);
   };
 
   const updateProduct = (updatedProduct: Product) => {
     setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+
+    // Push notification para vendedoras informando actualización de inventario / catálogo
+    const notif: AppNotification = {
+      id: `upd-prod-${Date.now()}`,
+      title: `🔄 Catálogo Actualizado: ${updatedProduct.name}`,
+      message: `La administración actualizó los detalles, fotografías y presentaciones de "${updatedProduct.name}". Revisa el catálogo para mantener al día a tus clientes.`,
+      type: 'inventory_update',
+      timestamp: 'Justo ahora',
+      read: false,
+      productId: updatedProduct.id,
+      productName: updatedProduct.name,
+      targetRole: 'vendedor',
+      adminAuthor: currentUser.name,
+    };
+    dispatchPushNotification(notif);
   };
 
   const deleteProduct = (productId: string) => {
@@ -783,6 +1044,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markAllNotificationsAsRead,
         pushNotificationsEnabled,
         setPushNotificationsEnabled,
+        activePushToast,
+        dismissPushToast,
+        dispatchPushNotification,
+        requestBrowserPushPermission,
         currentTab,
         setCurrentTab,
         getMonthlyReport,
@@ -790,6 +1055,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsCartOpen,
         isAuthOpen,
         setIsAuthOpen,
+        isAdminAuthOpen,
+        setIsAdminAuthOpen,
+        isNavigationDrawerOpen,
+        setIsNavigationDrawerOpen,
+        shippingRates,
+        updateShippingRate,
+        loginAsAdmin,
+        loginWithGoogle,
+        logout,
       }}
     >
       {children}

@@ -137,11 +137,6 @@ export const CartDrawer: React.FC = () => {
                           <div className="text-xs font-black text-[#d4145a]">
                             ${item.presentation.price * item.quantity} MXN
                           </div>
-                          {isVendor && (
-                            <div className="text-[9px] text-[#b3925d] font-bold">
-                              Mayoreo: ${ (item.presentation.wholesalePrice || Math.round(item.presentation.price * 0.65)) * item.quantity }
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -153,33 +148,14 @@ export const CartDrawer: React.FC = () => {
             {/* Cart Footer */}
             {cart.length > 0 && (
               <div className="p-4 border-t border-zinc-200 bg-[#faf8f5] space-y-3">
-                
-                {/* Vendor Profit Ribbon */}
-                {isVendor && cartPotentialCommission > 0 && (
-                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-[#b3925d]/20 to-[#ecd08c]/20 border border-[#b3925d]/40 flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1 font-bold text-[#8c6e3d]">
-                      <Sparkles className="w-3.5 h-3.5 text-[#b3925d]" /> Ganancia Vendedora:
-                    </span>
-                    <span className="font-black text-[#8c6e3d] text-sm">
-                      +${cartPotentialCommission.toLocaleString('es-MX')} MXN
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-1 text-xs">
+                <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between text-zinc-600">
-                    <span>Subtotal Catálogo:</span>
-                    <span className="font-bold">${cartSubtotalCatalog.toLocaleString('es-MX')} MXN</span>
+                    <span>Subtotal Productos:</span>
+                    <span className="font-bold text-zinc-900">${cartSubtotalCatalog.toLocaleString('es-MX')} MXN</span>
                   </div>
-                  {isVendor && (
-                    <div className="flex justify-between text-[#8c6e3d] font-bold">
-                      <span>Costo Vendedora a Liquidar:</span>
-                      <span>${cartSubtotalWholesale.toLocaleString('es-MX')} MXN</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-zinc-400 text-[11px]">
-                    <span>Flete Nacional:</span>
-                    <span>Se calcula en el siguiente paso</span>
+                  <div className="flex justify-between text-zinc-500 text-[11px]">
+                    <span>Flete Nacional ({weightKg} kg):</span>
+                    <span className="text-[#b3925d] font-semibold">Se cotiza por paquetería al pagar</span>
                   </div>
                 </div>
 

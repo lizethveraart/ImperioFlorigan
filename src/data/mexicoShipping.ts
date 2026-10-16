@@ -17,10 +17,10 @@ export const MEXICO_STATES: MexicoState[] = [
   { code: 'COAH', name: 'Coahuila', zone: 'Norte' },
   { code: 'COL', name: 'Colima', zone: 'Bajio' },
   { code: 'DGO', name: 'Durango', zone: 'Norte' },
-  { code: 'GTO', name: 'Guanajuato', zone: 'Bajio' },
+  { code: 'GTO', name: 'Guanajuato (Matriz Irapuato)', zone: 'Local' },
   { code: 'GRO', name: 'Guerrero', zone: 'Sur' },
   { code: 'HGO', name: 'Hidalgo', zone: 'Centro' },
-  { code: 'JAL', name: 'Jalisco (Matriz Guadalajara)', zone: 'Local' },
+  { code: 'JAL', name: 'Jalisco', zone: 'Bajio' },
   { code: 'MEX', name: 'Estado de México', zone: 'Centro' },
   { code: 'MICH', name: 'Michoacán', zone: 'Bajio' },
   { code: 'MOR', name: 'Morelos', zone: 'Centro' },
@@ -41,7 +41,48 @@ export const MEXICO_STATES: MexicoState[] = [
   { code: 'ZAC', name: 'Zacatecas', zone: 'Bajio' },
 ];
 
-export function calculateShippingQuotes(weightGrams: number, stateName: string): ShippingQuote[] {
+import { ShippingCarrierRate } from '../types';
+
+export const DEFAULT_CARRIER_RATES: ShippingCarrierRate[] = [
+  {
+    carrier: 'RedPack Terrestre',
+    serviceName: 'Económico Nacional Terrestre',
+    baseCost: 115,
+    extraKgCost: 22,
+    estimatedDays: '3 a 5 días hábiles',
+    active: true,
+  },
+  {
+    carrier: 'Estafeta',
+    serviceName: 'Estafeta Estándar Prioritario',
+    baseCost: 145,
+    extraKgCost: 26,
+    estimatedDays: '2 a 3 días hábiles',
+    active: true,
+  },
+  {
+    carrier: 'FedEx Express',
+    serviceName: 'FedEx Express Saver Garantizado',
+    baseCost: 175,
+    extraKgCost: 32,
+    estimatedDays: '1 a 2 días hábiles',
+    active: true,
+  },
+  {
+    carrier: 'DHL Express',
+    serviceName: 'DHL Express 24h Premium',
+    baseCost: 210,
+    extraKgCost: 38,
+    estimatedDays: '24 hrs hábiles (Día Siguiente)',
+    active: true,
+  },
+];
+
+export function calculateShippingQuotes(
+  weightGrams: number,
+  stateName: string,
+  customRates: ShippingCarrierRate[] = DEFAULT_CARRIER_RATES
+): ShippingQuote[] {
   const kg = Math.max(0.3, weightGrams / 1000);
   const found = MEXICO_STATES.find(s => s.name.toLowerCase().includes(stateName.toLowerCase()));
   const zone = found ? found.zone : 'Centro';
@@ -55,52 +96,38 @@ export function calculateShippingQuotes(weightGrams: number, stateName: string):
 
   const bracket = kg <= 1 ? 'Hasta 1.0 kg' : kg <= 3 ? '1.1 - 3.0 kg' : kg <= 5 ? '3.1 - 5.0 kg' : `${kg.toFixed(1)} kg pesado`;
 
-  // Base pricing
-  const baseRedpack = Math.round((115 + (kg > 1 ? (kg - 1) * 22 : 0)) * zoneMultiplier);
-  const baseEstafeta = Math.round((145 + (kg > 1 ? (kg - 1) * 26 : 0)) * zoneMultiplier);
-  const baseFedEx = Math.round((175 + (kg > 1 ? (kg - 1) * 32 : 0)) * zoneMultiplier);
-  const baseDHL = Math.round((210 + (kg > 1 ? (kg - 1) * 38 : 0)) * zoneMultiplier);
+  const quotes: ShippingQuote[] = [];
 
-  const quotes: ShippingQuote[] = [
-    {
-      carrier: 'RedPack Terrestre',
-      serviceName: 'Económico Nacional Terrestre',
-      cost: baseRedpack,
-      estimatedDays: zone === 'Local' ? '1 a 2 días hábiles' : '3 a 5 días hábiles',
-      weightBracket: bracket,
-    },
-    {
-      carrier: 'Estafeta',
-      serviceName: 'Estafeta Estándar Prioritario',
-      cost: baseEstafeta,
-      estimatedDays: zone === 'Local' ? 'Día siguiente hábil' : '2 a 3 días hábiles',
-      weightBracket: bracket,
-    },
-    {
-      carrier: 'FedEx Express',
-      serviceName: 'FedEx Express Saver Garantizado',
-      cost: baseFedEx,
-      estimatedDays: '1 a 2 días hábiles',
-      weightBracket: bracket,
-    },
-    {
-      carrier: 'DHL Express',
-      serviceName: 'DHL Express 24h Premium',
-      cost: baseDHL,
-      estimatedDays: '24 hrs hábiles (Día Siguiente)',
-      weightBracket: bracket,
-    },
-  ];
-
+  // Local pickup if in Guanajuato/Local
   if (zone === 'Local') {
-    quotes.unshift({
-      carrier: 'Punto Matriz Guadalajara',
-      serviceName: 'Recolección Directa en Centro Distribución Florigan Matriz',
+    quotes.push({
+      carrier: 'Punto Matriz Irapuato',
+      serviceName: 'Recolección Directa en Centro de Distribución Irapuato, Gto.',
       cost: 0,
       estimatedDays: 'Listo en 2 horas',
       weightBracket: 'Sin límite',
     });
   }
+
+  // Iterate over active carrier rates
+  customRates.forEach(rate => {
+    if (!rate.active) return;
+    const extraKg = kg > 1 ? kg - 1 : 0;
+    const calculatedCost = Math.round((rate.baseCost + extraKg * rate.extraKgCost) * zoneMultiplier);
+    
+    let days = rate.estimatedDays;
+    if (zone === 'Local') {
+      days = rate.carrier === 'Estafeta' ? 'Día siguiente hábil' : '1 a 2 días hábiles';
+    }
+
+    quotes.push({
+      carrier: rate.carrier,
+      serviceName: rate.serviceName,
+      cost: calculatedCost,
+      estimatedDays: days,
+      weightBracket: bracket,
+    });
+  });
 
   return quotes;
 }

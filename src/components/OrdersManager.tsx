@@ -237,7 +237,7 @@ export const OrdersManager: React.FC = () => {
                     Enviar Guía por WhatsApp
                   </button>
 
-                  {(currentUser.role === 'admin' || currentUser.role === 'vendedor') && (
+                  {currentUser.role === 'admin' && (
                     <button
                       onClick={() => handleOpenEdit(order)}
                       className="py-1.5 px-3 rounded-xl bg-[#141211] hover:bg-[#26211e] text-[#ecd08c] font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"

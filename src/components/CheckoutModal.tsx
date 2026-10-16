@@ -6,18 +6,18 @@ import { exportOrderReceiptPDF } from '../services/pdfService';
 import confetti from 'canvas-confetti';
 import {
   X,
-  CreditCard,
   Building2,
   Store,
-  Wallet,
+  MessageCircle,
   CheckCircle2,
   Download,
-  Send,
   AlertCircle,
   Truck,
   User,
   MapPin,
   Lock,
+  Phone,
+  Sparkles,
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -31,81 +31,41 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
     cart,
     totalCartWeightGrams,
     cartSubtotalCatalog,
-    cartSubtotalWholesale,
-    cartPotentialCommission,
     currentUser,
-    clients,
     createOrder,
+    clearCart,
   } = useApp();
 
   if (!isOpen || cart.length === 0) return null;
 
-  // Selected client or custom input
-  const initialClient = clients.find(c => c.id === preselectedClientId) || (currentUser.role === 'cliente' ? {
-    fullName: currentUser.name,
-    phone: currentUser.phone || '33 1234 5678',
-    address: 'Av. Vallarta 2440',
-    city: currentUser.city || 'Guadalajara',
-    state: currentUser.state || 'Jalisco (Matriz Guadalajara)',
-    postalCode: '44100',
-  } : {
-    fullName: clients[0]?.fullName || '',
-    phone: clients[0]?.phone || '',
-    address: clients[0]?.address || '',
-    city: clients[0]?.city || 'Guadalajara',
-    state: clients[0]?.state || 'Jalisco (Matriz Guadalajara)',
-    postalCode: clients[0]?.postalCode || '44100',
-  });
-
-  const [clientName, setClientName] = useState(initialClient.fullName);
-  const [clientPhone, setClientPhone] = useState(initialClient.phone);
-  const [clientAddress, setClientAddress] = useState(initialClient.address);
-  const [clientCity, setClientCity] = useState(initialClient.city);
-  const [clientState, setClientState] = useState(initialClient.state);
-  const [clientPostalCode, setClientPostalCode] = useState(initialClient.postalCode);
+  const [clientName, setClientName] = useState(currentUser.name || '');
+  const [clientPhone, setClientPhone] = useState(currentUser.phone && !currentUser.phone.includes('3619') ? currentUser.phone : '000 000 0000');
+  const [clientAddress, setClientAddress] = useState(currentUser.address || 'Av. Guerrero 1500, Col. Jardines');
+  const [clientCity, setClientCity] = useState(currentUser.city && currentUser.city !== 'Guadalajara' ? currentUser.city : 'Irapuato');
+  const [clientState, setClientState] = useState(currentUser.state && !currentUser.state.includes('Guadalajara') ? currentUser.state : 'Guanajuato');
+  const [clientPostalCode, setClientPostalCode] = useState(currentUser.postalCode || '36660');
 
   const [selectedQuote, setSelectedQuote] = useState<ShippingQuote | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('card');
-
-  // Card form state
-  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
-  const [cardHolder, setCardHolder] = useState(currentUser.name);
-  const [cardExpiry, setCardExpiry] = useState('08/29');
-  const [cardCvv, setCardCvv] = useState('382');
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('spei');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const shippingCost = selectedQuote ? selectedQuote.cost : 0;
-  const isVendor = currentUser.role === 'vendedor';
-  const effectiveSubtotal = isVendor ? cartSubtotalWholesale : cartSubtotalCatalog;
-  const grandTotal = effectiveSubtotal + shippingCost;
-
-  const handleSelectExistingClient = (clientId: string) => {
-    const found = clients.find(c => c.id === clientId);
-    if (found) {
-      setClientName(found.fullName);
-      setClientPhone(found.phone);
-      setClientAddress(found.address);
-      setClientCity(found.city);
-      setClientState(found.state);
-      setClientPostalCode(found.postalCode);
-    }
-  };
+  const grandTotal = cartSubtotalCatalog + shippingCost;
 
   const handleProcessPayment = () => {
-    if (!clientName || !clientPhone || !clientAddress || !selectedQuote) {
-      alert('Por favor completa todos los datos de envío y selecciona una paquetería.');
+    if (!clientName.trim() || !clientPhone.trim() || !clientAddress.trim() || !selectedQuote) {
+      alert('Por favor completa los datos de entrega y selecciona una paquetería.');
       return;
     }
 
     setIsProcessing(true);
 
     setTimeout(() => {
-      let ref = `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
-      if (paymentMethod === 'spei') ref = `SPEI-BBVA-646180${Math.floor(1000 + Math.random() * 9000)}`;
+      let ref = `REF-FLR-${Math.floor(100000 + Math.random() * 900000)}`;
+      if (paymentMethod === 'spei') ref = `SPEI-BBVA-${Math.floor(10000000 + Math.random() * 90000000)}`;
       if (paymentMethod === 'oxxo') ref = `OXXO-9381-0429-${Math.floor(1000 + Math.random() * 9000)}`;
-      if (paymentMethod === 'florigan_credit') ref = `CRED-FLR-${currentUser.name.split(' ')[0]}-01`;
+      if (paymentMethod === 'whatsapp') ref = `WSP-${Math.floor(10000 + Math.random() * 90000)}`;
 
       const orderItems = cart.map(item => ({
         productId: item.productId,
@@ -118,19 +78,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
         weightGrams: item.presentation.weightGrams * item.quantity,
       }));
 
+      // Generate random courier tracking number
+      const carrierPrefix = selectedQuote.carrier.includes('FedEx')
+        ? 'FDX'
+        : selectedQuote.carrier.includes('Estafeta')
+        ? 'EST'
+        : selectedQuote.carrier.includes('DHL')
+        ? 'DHL'
+        : 'RPK';
+      const tracking = `${carrierPrefix}-${Math.floor(100000000 + Math.random() * 900000000)}MX`;
+
       const newOrder = createOrder({
         userId: currentUser.id,
-        userRole: currentUser.role,
-        clientName,
-        clientPhone,
-        clientAddress,
-        clientCity,
+        userRole: 'cliente',
+        clientName: clientName.trim(),
+        clientPhone: clientPhone.trim(),
+        clientAddress: clientAddress.trim(),
+        clientCity: clientCity.trim(),
         clientState,
-        clientPostalCode,
+        clientPostalCode: clientPostalCode.trim(),
         items: orderItems,
         subtotalCatalog: cartSubtotalCatalog,
-        subtotalWholesale: cartSubtotalWholesale,
-        vendorCommission: cartPotentialCommission,
+        subtotalWholesale: Math.round(cartSubtotalCatalog * 0.65),
+        vendorCommission: 0,
         shippingCost,
         shippingCarrier: selectedQuote.carrier,
         totalWeightGrams: totalCartWeightGrams,
@@ -139,159 +109,175 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
         paymentStatus: 'Aprobado',
         paymentReference: ref,
         status: 'Preparando',
-        trackingNumber: `${selectedQuote.carrier.substring(0, 3).toUpperCase()}-${Math.floor(10000000 + Math.random() * 90000000)}MX`,
+        trackingNumber: tracking,
+        notes: `Pedido realizado en línea por ${clientName}`,
       });
 
-      setIsProcessing(false);
       setCompletedOrder(newOrder);
+      setIsProcessing(false);
 
-      // Trigger celebration confetti
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#b3925d', '#d4145a', '#ecd08c', '#ffffff'],
-        });
-      } catch (e) {
-        // Safe fallback
-      }
+      // Launch golden celebratory confetti
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#b3925d', '#ecd08c', '#d4145a', '#ffffff'],
+      });
     }, 1200);
   };
 
-  const handleShareWhatsApp = (ord: Order) => {
-    const text = `🌸 *CONFIRMACIÓN DE PEDIDO IMPERIO FLORIGAN*\n\n¡Gracias por tu compra, *${ord.clientName}*!\n\n📋 *Pedido:* ${ord.orderNumber}\n📦 *Envío:* ${ord.shippingCarrier}\n📍 *Destino:* ${ord.clientAddress}, ${ord.clientCity}, ${ord.clientState}\n🏷️ *Total:* $${ord.grandTotal.toLocaleString('es-MX')} MXN\n💳 *Método de Pago:* ${ord.paymentMethod.toUpperCase()}\n📑 *Referencia:* ${ord.paymentReference}\n\nFlorigan Desde 1975 • En breve te compartiremos tu guía de rastreo.`;
-    const url = `https://wa.me/52${ord.clientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  const handleFinishAndClose = () => {
+    setCompletedOrder(null);
+    onClose();
+  };
+
+  const handleSendWhatsAppOrder = (order: Order) => {
+    const text = encodeURIComponent(
+      `¡Hola Imperio Florigan! Acabo de registrar mi pedido #${order.orderNumber} por un total de $${order.grandTotal} MXN con envío a ${order.clientCity}, ${order.clientState}. Método: ${order.paymentMethod.toUpperCase()} (Ref: ${order.paymentReference}).`
+    );
+    window.open(`https://wa.me/520000000000?text=${text}`, '_blank');
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#b3925d]/30 text-[#1a1715] max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#b3925d]/40 flex flex-col max-h-[92vh]">
         
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-200 bg-[#141211] text-white flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-[#141211] text-white flex items-center justify-between border-b border-[#b3925d]/30 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#b3925d]/20 border border-[#b3925d] flex items-center justify-center text-[#ecd08c]">
-              <Lock className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#d4145a] to-[#b3925d] flex items-center justify-center text-xs font-bold text-white shadow">
+              F
             </div>
             <div>
-              <h2 className="font-cinzel text-base sm:text-lg font-bold text-[#ecd08c]">
-                Pasarela de Pago Segura • Imperio Florigan
+              <h2 className="font-cinzel text-base font-bold text-[#ecd08c]">
+                Finalizar Compra Directa
               </h2>
-              <p className="text-[11px] text-zinc-300">
-                {isVendor ? 'Liquidación a precio de mayoreo de vendedora (35% margen)' : 'Compra directa de catálogo Florigan'}
-              </p>
+              <span className="text-[10px] text-zinc-300">
+                Imperio Florigan • Envíos Oficiales a Todo México
+              </span>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+            className="p-1 rounded-full text-zinc-400 hover:text-white hover:bg-white/10"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        {/* Modal Scrollable Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-[#1a1715]">
           {completedOrder ? (
-            /* Success Order View */
+            /* Order Success View */
             <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-lg shadow-emerald-600/20">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
+
               <div>
-                <h3 className="font-cinzel text-2xl font-bold text-[#141211]">
-                  ¡Pedido {completedOrder.orderNumber} Exitoso!
+                <h3 className="font-cinzel text-xl font-bold text-[#141211]">
+                  ¡Pedido Confirmado con Éxito!
                 </h3>
-                <p className="text-xs text-zinc-600 mt-1 max-w-md mx-auto">
-                  Tu orden ha sido registrada en el sistema de Imperio Florigan. Se ha enviado la solicitud al almacén central en Guadalajara para despacho inmediato.
+                <p className="text-xs text-zinc-600 mt-1">
+                  Tu compra ha sido registrada. Hemos reservado tu producto en almacén para despacho nacional.
                 </p>
               </div>
 
-              {/* Order Info Card */}
-              <div className="max-w-md mx-auto bg-[#faf8f5] p-4 rounded-2xl border border-[#b3925d]/30 text-left text-xs space-y-2">
-                <div className="flex justify-between pb-2 border-b border-zinc-200">
-                  <span className="text-zinc-500">Destinatario:</span>
-                  <span className="font-bold text-[#141211]">{completedOrder.clientName}</span>
+              {/* Order Summary Receipt Box */}
+              <div className="p-4 rounded-2xl bg-[#faf8f5] border border-[#b3925d]/30 text-left max-w-md mx-auto text-xs space-y-2">
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Número de Pedido:</span>
+                  <span className="font-mono font-bold text-[#d4145a]">#{completedOrder.orderNumber}</span>
                 </div>
-                <div className="flex justify-between pb-2 border-b border-zinc-200">
-                  <span className="text-zinc-500">Paquetería Nacional:</span>
-                  <span className="font-bold text-[#d4145a]">{completedOrder.shippingCarrier}</span>
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Destinatario:</span>
+                  <span className="font-semibold text-zinc-800">{completedOrder.clientName}</span>
                 </div>
-                <div className="flex justify-between pb-2 border-b border-zinc-200">
-                  <span className="text-zinc-500">Guía de Rastreo Generada:</span>
-                  <span className="font-mono font-bold text-zinc-800">{completedOrder.trackingNumber}</span>
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Destino:</span>
+                  <span className="text-zinc-700">{completedOrder.clientCity}, {completedOrder.clientState}</span>
                 </div>
-                <div className="flex justify-between pb-2 border-b border-zinc-200">
-                  <span className="text-zinc-500">Método de Pago:</span>
-                  <span className="font-bold text-[#141211] uppercase">{completedOrder.paymentMethod}</span>
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Paquetería:</span>
+                  <span className="font-semibold text-zinc-800">{completedOrder.shippingCarrier}</span>
                 </div>
-                <div className="flex justify-between pt-1 text-sm font-black text-[#141211]">
-                  <span>Total Cobrado:</span>
-                  <span className="text-[#d4145a]">${completedOrder.grandTotal.toLocaleString('es-MX')} MXN</span>
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Guía Asignada:</span>
+                  <span className="font-mono font-bold text-blue-700">{completedOrder.trackingNumber}</span>
+                </div>
+                <div className="flex justify-between border-b border-zinc-200 pb-2">
+                  <span className="font-bold text-zinc-500">Total Pagado:</span>
+                  <span className="font-black text-sm text-[#d4145a]">
+                    ${completedOrder.grandTotal.toLocaleString('es-MX')} MXN
+                  </span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="font-bold text-zinc-500">Referencia de Pago:</span>
+                  <span className="font-mono text-zinc-600">{completedOrder.paymentReference}</span>
                 </div>
               </div>
 
-              {/* Actions: Download PDF & WhatsApp */}
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto pt-2">
+              {/* Instructions based on payment method */}
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 max-w-md mx-auto text-left">
+                {completedOrder.paymentMethod === 'spei' && (
+                  <div>
+                    <strong className="block font-bold mb-1">Instrucciones para Transferencia SPEI:</strong>
+                    Transfiere <strong>${completedOrder.grandTotal} MXN</strong> a la CLABE <strong>6461 8011 2400 9182 34</strong> (STP/BBVA) a nombre de <strong>IMPERIO FLORIGAN S.A. DE C.V.</strong> indicando en concepto <strong>{completedOrder.orderNumber}</strong>.
+                  </div>
+                )}
+                {completedOrder.paymentMethod === 'oxxo' && (
+                  <div>
+                    <strong className="block font-bold mb-1">Instrucciones para Pago en OXXO:</strong>
+                    Acude a cualquier tienda OXXO y proporciona al cajero la referencia <strong>{completedOrder.paymentReference}</strong> por un total de <strong>${completedOrder.grandTotal} MXN</strong>.
+                  </div>
+                )}
+                {completedOrder.paymentMethod === 'whatsapp' && (
+                  <div>
+                    <strong className="block font-bold mb-1">Atención Directa por WhatsApp:</strong>
+                    Presiona el botón verde abajo para enviar el resumen de tu pedido a nuestra asesora y coordinar la confirmación inmediata.
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => exportOrderReceiptPDF(completedOrder)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#141211] text-[#ecd08c] hover:bg-[#25201d] font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-[#141211] text-[#ecd08c] font-bold text-xs flex items-center gap-2 hover:bg-[#2b2724] transition-colors"
                 >
-                  <Download className="w-4 h-4 text-[#ecd08c]" />
-                  Descargar Remisión en PDF
+                  <Download className="w-4 h-4" />
+                  <span>Descargar Nota en PDF</span>
                 </button>
-                <button
-                  onClick={() => handleShareWhatsApp(completedOrder)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                  Notificar al Cliente por WhatsApp
-                </button>
-              </div>
 
-              <div className="pt-4">
                 <button
-                  onClick={onClose}
-                  className="text-xs text-zinc-500 hover:text-zinc-800 underline font-medium"
+                  onClick={() => handleSendWhatsAppOrder(completedOrder)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 transition-colors shadow-md"
                 >
-                  Regresar a la aplicación
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Enviar por WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={handleFinishAndClose}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs transition-colors"
+                >
+                  Seguir Comprando
                 </button>
               </div>
             </div>
           ) : (
-            /* Checkout Steps */
+            /* Checkout Form Steps */
             <>
               {/* Step 1: Customer Details */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[#141211] text-[#ecd08c] font-bold text-xs flex items-center justify-center">
-                      1
-                    </div>
-                    <span className="font-cinzel text-sm font-bold text-[#141211]">
-                      Datos del Cliente y Destinatario
-                    </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[#141211] text-[#ecd08c] font-bold text-xs flex items-center justify-center">
+                    1
                   </div>
-
-                  {/* Client Selector for Vendors */}
-                  {isVendor && clients.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-zinc-500 font-semibold">Cargar de mi cartera:</span>
-                      <select
-                        onChange={e => handleSelectExistingClient(e.target.value)}
-                        className="text-xs py-1 px-2 border border-[#b3925d]/40 rounded-lg bg-[#faf8f5] text-[#8c6e3d] font-bold focus:outline-none"
-                      >
-                        <option value="">Seleccionar Cliente...</option>
-                        {clients.map(c => (
-                          <option key={c.id} value={c.id}>
-                            {c.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                  <span className="font-cinzel text-sm font-bold text-[#141211]">
+                    Datos de Envío y Contacto
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -301,48 +287,56 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
                     </label>
                     <input
                       type="text"
+                      required
                       value={clientName}
                       onChange={e => setClientName(e.target.value)}
-                      placeholder="Nombre del cliente o destinatario"
+                      placeholder="Nombre de quien recibe"
                       className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
                     />
                   </div>
+
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
-                      Teléfono Celular (WhatsApp):
+                      Teléfono WhatsApp (para avisos de guía):
                     </label>
                     <input
                       type="text"
+                      required
                       value={clientPhone}
                       onChange={e => setClientPhone(e.target.value)}
                       placeholder="Ej. 33 1234 5678"
                       className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
                     />
                   </div>
+
                   <div className="sm:col-span-2">
                     <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
-                      Dirección Completa (Calle, Número, Colonia):
+                      Dirección Completa (Calle, Número Exterior/Interior, Colonia):
                     </label>
                     <input
                       type="text"
+                      required
                       value={clientAddress}
                       onChange={e => setClientAddress(e.target.value)}
                       placeholder="Ej. Av. Chapultepec 410, Col. Americana"
                       className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
                     />
                   </div>
+
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
-                      Ciudad / Municipio:
+                      Ciudad o Municipio:
                     </label>
                     <input
                       type="text"
+                      required
                       value={clientCity}
                       onChange={e => setClientCity(e.target.value)}
                       placeholder="Ej. Guadalajara"
                       className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
                     />
                   </div>
+
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
                       Código Postal:
@@ -350,6 +344,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
                     <input
                       type="text"
                       maxLength={5}
+                      required
                       value={clientPostalCode}
                       onChange={e => setClientPostalCode(e.target.value)}
                       placeholder="Ej. 44160"
@@ -366,7 +361,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
                     2
                   </div>
                   <span className="font-cinzel text-sm font-bold text-[#141211]">
-                    Cotización de Envíos Nacionales por Peso ({clientState})
+                    Cotización de Envío Nacional por Peso ({clientState})
                   </span>
                 </div>
 
@@ -379,222 +374,134 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
                 />
               </div>
 
-              {/* Step 3: Integrated Payment Gateway */}
+              {/* Step 3: Payment Method (SPEI, OXXO, WhatsApp - NO Card) */}
               <div className="space-y-3 pt-4 border-t border-zinc-200">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-[#141211] text-[#ecd08c] font-bold text-xs flex items-center justify-center">
                     3
                   </div>
                   <span className="font-cinzel text-sm font-bold text-[#141211]">
-                    Método de Pago Integrado
+                    Método de Pago Seguro
                   </span>
                 </div>
 
-                {/* Method selector tabs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
-                    onClick={() => setPaymentMethod('card')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
-                      paymentMethod === 'card'
-                        ? 'border-[#d4145a] bg-[#d4145a]/5 text-[#d4145a] font-bold'
-                        : 'border-zinc-200 hover:border-zinc-300 text-zinc-600'
-                    }`}
-                  >
-                    <CreditCard className="w-5 h-5 mb-1" />
-                    <span className="text-[11px]">Tarjeta Bancaria</span>
-                  </button>
-
-                  <button
+                    type="button"
                     onClick={() => setPaymentMethod('spei')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                    className={`p-3.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all ${
                       paymentMethod === 'spei'
-                        ? 'border-[#d4145a] bg-[#d4145a]/5 text-[#d4145a] font-bold'
+                        ? 'border-[#d4145a] bg-[#d4145a]/5 text-[#d4145a] font-bold shadow-xs'
                         : 'border-zinc-200 hover:border-zinc-300 text-zinc-600'
                     }`}
                   >
-                    <Building2 className="w-5 h-5 mb-1" />
-                    <span className="text-[11px]">Transferencia SPEI</span>
+                    <Building2 className="w-5 h-5 mb-1.5" />
+                    <span className="text-xs font-bold">Transferencia SPEI</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">BBVA / STP Instantáneo</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setPaymentMethod('oxxo')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                    className={`p-3.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all ${
                       paymentMethod === 'oxxo'
-                        ? 'border-[#d4145a] bg-[#d4145a]/5 text-[#d4145a] font-bold'
+                        ? 'border-[#d4145a] bg-[#d4145a]/5 text-[#d4145a] font-bold shadow-xs'
                         : 'border-zinc-200 hover:border-zinc-300 text-zinc-600'
                     }`}
                   >
-                    <Store className="w-5 h-5 mb-1" />
-                    <span className="text-[11px]">OXXO Pay</span>
+                    <Store className="w-5 h-5 mb-1.5" />
+                    <span className="text-xs font-bold">Pago OXXO Pay</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">Efectivo en cualquier tienda</span>
                   </button>
 
                   <button
-                    onClick={() => setPaymentMethod('florigan_credit')}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
-                      paymentMethod === 'florigan_credit'
-                        ? 'border-[#b3925d] bg-[#b3925d]/10 text-[#8c6e3d] font-bold'
+                    type="button"
+                    onClick={() => setPaymentMethod('whatsapp')}
+                    className={`p-3.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all ${
+                      paymentMethod === 'whatsapp'
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold shadow-xs'
                         : 'border-zinc-200 hover:border-zinc-300 text-zinc-600'
                     }`}
                   >
-                    <Wallet className="w-5 h-5 mb-1" />
-                    <span className="text-[11px]">Crédito Florigan</span>
+                    <MessageCircle className="w-5 h-5 mb-1.5 text-emerald-600" />
+                    <span className="text-xs font-bold">WhatsApp Directo</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5">Atención y cotización personalizada</span>
                   </button>
                 </div>
 
-                {/* Payment Method Details */}
-                <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-200 text-xs">
-                  {paymentMethod === 'card' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-zinc-700">Tarjeta de Crédito / Débito:</span>
-                        <div className="flex gap-1">
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-[9px] font-bold">VISA</span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-[9px] font-bold">MASTERCARD</span>
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-[9px] font-bold">AMEX</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div className="sm:col-span-2">
-                          <label className="text-[10px] text-zinc-500 font-bold block mb-1">Número de Tarjeta:</label>
-                          <input
-                            type="text"
-                            value={cardNumber}
-                            onChange={e => setCardNumber(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-xl font-mono text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-zinc-500 font-bold block mb-1">Nombre en Tarjeta:</label>
-                          <input
-                            type="text"
-                            value={cardHolder}
-                            onChange={e => setCardHolder(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs uppercase"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-zinc-500 font-bold block mb-1">Expira:</label>
-                            <input
-                              type="text"
-                              value={cardExpiry}
-                              onChange={e => setCardExpiry(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-zinc-500 font-bold block mb-1">CVV:</label>
-                            <input
-                              type="password"
-                              maxLength={4}
-                              value={cardCvv}
-                              onChange={e => setCardCvv(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs text-center font-mono"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+                {/* Method instructions preview */}
+                <div className="bg-[#faf8f5] rounded-2xl p-4 border border-[#e8cbb0] text-xs">
                   {paymentMethod === 'spei' && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 text-zinc-700">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-zinc-800">Transferencia Electrónica SPEI Inmediata</span>
-                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Aprobación Instantánea</span>
+                        <strong className="text-zinc-900">Transferencia Electrónica SPEI Inmediata:</strong>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                          Sin Comisiones
+                        </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500">
-                        Realiza tu transferencia desde la app de cualquier banco mexicano (BBVA, Banorte, Santander, Banamex, Hey Banco, etc.):
+                      <p className="text-[11px] text-zinc-600">
+                        Al confirmar tu pedido recibirás la CLABE interbancaria única para transferir desde BBVA, Santander, Banamex o cualquier banco.
                       </p>
-                      <div className="p-3 bg-white rounded-xl border border-zinc-300 font-mono text-xs space-y-1">
-                        <div><strong className="text-zinc-600">Banco Receptor:</strong> STP / BBVA México</div>
-                        <div><strong className="text-zinc-600">CLABE Interbancaria:</strong> 6461 8011 2400 9182 34</div>
-                        <div><strong className="text-zinc-600">Beneficiario:</strong> IMPERIO FLORIGAN S.A. DE C.V.</div>
-                        <div><strong className="text-zinc-600">Concepto / Ref:</strong> FLORIGAN-842</div>
-                      </div>
                     </div>
                   )}
 
                   {paymentMethod === 'oxxo' && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 text-zinc-700">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-zinc-800">Pago en Tiendas OXXO (OXXO Pay)</span>
-                        <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-bold">Acreditación en Minutos</span>
+                        <strong className="text-zinc-900">Pago en Efectivo OXXO Pay:</strong>
+                        <span className="text-[10px] font-bold text-zinc-600 bg-zinc-200 px-2 py-0.5 rounded">
+                          Nacional
+                        </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500">
-                        Se generará una referencia de 14 dígitos que podrás dictar o presentar al cajero de cualquier tienda OXXO en la República Mexicana.
+                      <p className="text-[11px] text-zinc-600">
+                        Se generará una referencia numérica y código de barras para que pagues en cualquier caja OXXO de la República Mexicana.
                       </p>
-                      <div className="p-3 bg-white rounded-xl border border-zinc-300 font-mono text-center">
-                        <div className="text-[10px] text-zinc-400">Referencia de Prueba OXXO Pay:</div>
-                        <div className="text-base font-bold text-zinc-800 tracking-widest mt-1">
-                          9381 0429 8812 40
-                        </div>
-                      </div>
                     </div>
                   )}
 
-                  {paymentMethod === 'florigan_credit' && (
-                    <div className="space-y-2">
+                  {paymentMethod === 'whatsapp' && (
+                    <div className="space-y-1.5 text-zinc-700">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-[#8c6e3d]">Línea de Crédito Emperatriz Florigan (15 Días)</span>
-                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Activo</span>
+                        <strong className="text-emerald-900">Asesoría Directa por WhatsApp:</strong>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                          Atención VIP
+                        </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500">
-                        Permite a las vendedoras recibir los productos primero, entregarlos a sus clientes y liquidar el costo de mayoreo en un plazo de 15 días naturales.
+                      <p className="text-[11px] text-zinc-600">
+                        Tu pedido quedará reservado y una asesora oficial de Florigan te contactará para coordinar tu forma de pago preferida.
                       </p>
-                      <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-amber-200">
-                        <div>
-                          <span className="text-[10px] text-zinc-400 block">Límite Total: $15,000 MXN</span>
-                          <span className="text-xs font-bold text-zinc-800">Crédito Disponible: $9,850 MXN</span>
-                        </div>
-                        <span className="text-xs font-bold text-emerald-700">✓ Saldo Suficiente</span>
-                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Order Summary & Final Total */}
-              <div className="bg-[#faf8f5] p-4 rounded-2xl border border-[#b3925d]/40 space-y-2 text-xs">
-                <div className="flex justify-between text-zinc-600">
-                  <span>Subtotal Catálogo ({cart.length} productos):</span>
-                  <span>${cartSubtotalCatalog.toLocaleString('es-MX')} MXN</span>
+              {/* Order Total & CTA */}
+              <div className="pt-4 border-t border-zinc-200 space-y-2">
+                <div className="flex justify-between text-xs text-zinc-600">
+                  <span>Subtotal Productos ({cart.length} artículos):</span>
+                  <span className="font-bold text-zinc-900">${cartSubtotalCatalog.toLocaleString('es-MX')} MXN</span>
                 </div>
-
-                {isVendor && (
-                  <div className="flex justify-between font-bold text-[#b3925d]">
-                    <span>Margen de Ganancia Vendedora (Descuento):</span>
-                    <span>-${cartPotentialCommission.toLocaleString('es-MX')} MXN</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-zinc-600">
-                  <span>Envío Nacional ({selectedQuote?.carrier || 'Pendiente'}):</span>
-                  <span className="font-bold text-[#141211]">
-                    {shippingCost === 0 ? 'GRATIS' : `$${shippingCost.toLocaleString('es-MX')} MXN`}
-                  </span>
+                <div className="flex justify-between text-xs text-zinc-600">
+                  <span>Costo de Envío ({selectedQuote ? selectedQuote.carrier : 'Pendiente'}):</span>
+                  <span className="font-bold text-zinc-900">${shippingCost.toLocaleString('es-MX')} MXN</span>
                 </div>
-
-                <div className="pt-2 border-t border-zinc-300 flex justify-between items-center text-base font-black text-[#141211]">
+                <div className="flex justify-between text-base font-black text-[#141211] pt-2 border-t border-zinc-200">
                   <span>Total a Pagar:</span>
-                  <span className="text-xl text-[#d4145a]">${grandTotal.toLocaleString('es-MX')} MXN</span>
+                  <span className="text-[#d4145a] text-lg">${grandTotal.toLocaleString('es-MX')} MXN</span>
                 </div>
-              </div>
 
-              {/* Payment Submit Button */}
-              <div className="pt-2">
                 <button
-                  disabled={isProcessing}
+                  type="button"
+                  disabled={isProcessing || !selectedQuote}
                   onClick={handleProcessPayment}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#d4145a] via-[#e8226e] to-[#b3925d] text-white font-bold text-sm tracking-wider uppercase shadow-xl shadow-[#d4145a]/30 hover:brightness-110 active:scale-98 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#d4145a] via-[#e8226e] to-[#b3925d] text-white font-cinzel font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-xl shadow-[#d4145a]/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
                 >
                   {isProcessing ? (
-                    <span>Procesando Pago Seguro...</span>
+                    <span>Procesando y Asignando Guía...</span>
                   ) : (
                     <>
-                      <Lock className="w-4 h-4" />
-                      <span>Completar Pago • ${grandTotal.toLocaleString('es-MX')} MXN</span>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Confirmar Pedido (${grandTotal.toLocaleString('es-MX')} MXN)</span>
                     </>
                   )}
                 </button>
@@ -602,7 +509,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, p
             </>
           )}
         </div>
-
       </div>
     </div>
   );

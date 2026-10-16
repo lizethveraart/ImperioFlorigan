@@ -1,10 +1,18 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Sparkles, Users, ShoppingBag, PackageCheck, BarChart3, Shield } from 'lucide-react';
+import { Sparkles, ShoppingBag, PackageCheck, User as UserIcon, Menu } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
-  const { currentTab, setCurrentTab, currentUser, cart, setIsCartOpen } = useApp();
+  const { currentTab, setCurrentTab, cart, setIsCartOpen, setIsNavigationDrawerOpen, currentUser, setIsAuthOpen } = useApp();
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleProfileClick = () => {
+    if (!currentUser.email) {
+      setIsAuthOpen(true);
+    } else {
+      setCurrentTab('profile');
+    }
+  };
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141211]/95 backdrop-blur-lg border-t border-[#b3925d]/30 z-40 px-2 py-1 shadow-2xl">
@@ -21,18 +29,16 @@ export const BottomNav: React.FC = () => {
           <span className="text-[10px] font-medium tracking-tight">Catálogo</span>
         </button>
 
-        {/* Clientes (Vendedor) */}
-        {currentUser.role === 'vendedor' && (
-          <button
-            onClick={() => setCurrentTab('clients')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentTab === 'clients' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Users className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] font-medium tracking-tight">Clientes</span>
-          </button>
-        )}
+        {/* Mis Pedidos y Guías */}
+        <button
+          onClick={() => setCurrentTab('orders')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+            currentTab === 'orders' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <PackageCheck className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-medium tracking-tight">Mis Guías</span>
+        </button>
 
         {/* Floating Center Carrito */}
         <button
@@ -50,42 +56,25 @@ export const BottomNav: React.FC = () => {
           <span className="text-[9px] font-semibold text-[#ecd08c] mt-0.5">Carrito</span>
         </button>
 
-        {/* Pedidos */}
+        {/* Mi Panel / Mi Cuenta */}
         <button
-          onClick={() => setCurrentTab('orders')}
+          onClick={handleProfileClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'orders' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
+            currentTab === 'profile' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <PackageCheck className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-medium tracking-tight">Pedidos</span>
+          <UserIcon className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-medium tracking-tight">Mi Cuenta</span>
         </button>
 
-        {/* Reportes (Solo Admin) */}
-        {currentUser.role === 'admin' && (
-          <button
-            onClick={() => setCurrentTab('analytics')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentTab === 'analytics' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] font-medium tracking-tight">Reportes</span>
-          </button>
-        )}
-
-        {/* Admin (if admin) */}
-        {currentUser.role === 'admin' && (
-          <button
-            onClick={() => setCurrentTab('admin')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-              currentTab === 'admin' ? 'text-[#ecd08c]' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Shield className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] font-medium tracking-tight">Admin</span>
-          </button>
-        )}
+        {/* Menú Desplegable */}
+        <button
+          onClick={() => setIsNavigationDrawerOpen(true)}
+          className="flex flex-col items-center justify-center flex-1 py-1 text-zinc-400 hover:text-[#ecd08c] transition-colors"
+        >
+          <Menu className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-medium tracking-tight">Menú</span>
+        </button>
 
       </div>
     </nav>

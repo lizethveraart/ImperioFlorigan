@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useApp } from '../context/AppContext';
 import { MEXICO_STATES, calculateShippingQuotes } from '../data/mexicoShipping';
 import { ShippingQuote } from '../types';
 import { Truck, MapPin, Scale, Clock, ShieldCheck, Check } from 'lucide-react';
@@ -18,11 +19,12 @@ export const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
   selectedQuote,
   onSelectQuote,
 }) => {
+  const { shippingRates } = useApp();
   const [postalCode, setPostalCode] = useState('');
 
   const quotes = useMemo(() => {
-    return calculateShippingQuotes(totalWeightGrams, selectedState);
-  }, [totalWeightGrams, selectedState]);
+    return calculateShippingQuotes(totalWeightGrams, selectedState, shippingRates);
+  }, [totalWeightGrams, selectedState, shippingRates]);
 
   // Default select first quote if none selected
   React.useEffect(() => {

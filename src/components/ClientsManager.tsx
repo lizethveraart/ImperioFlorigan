@@ -30,7 +30,7 @@ export const ClientsManager: React.FC = () => {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('Jalisco (Matriz Guadalajara)');
+  const [state, setState] = useState('Guanajuato (Matriz Irapuato)');
   const [postalCode, setPostalCode] = useState('');
   const [skinType, setSkinType] = useState('Cutis Mixto');
   const [notes, setNotes] = useState('');
@@ -278,7 +278,7 @@ export const ClientsManager: React.FC = () => {
                     required
                     value={city}
                     onChange={e => setCity(e.target.value)}
-                    placeholder="Guadalajara"
+                    placeholder="Irapuato"
                     className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
                   />
                 </div>

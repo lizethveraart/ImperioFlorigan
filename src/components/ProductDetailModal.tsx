@@ -29,7 +29,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   const shareViaWhatsApp = () => {
     const text = `🌸 *Catálogo Florigan Desde 1975*\n\nHola, me interesa ordenar el siguiente producto:\n✨ *${product.name}*\n📦 Presentación: ${selectedPres.size}\n💰 Precio de Catálogo: $${selectedPres.price} MXN\n🌿 Línea: ${product.line}\n\n¿Tienes disponibilidad para envío nacional inmediato?`;
-    const url = `https://wa.me/523310711718?text=${encodeURIComponent(text)}`;
+    const url = `https://wa.me/520000000000?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
 
@@ -132,11 +132,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       >
                         <div className="text-xs font-bold text-[#141211]">{pres.size}</div>
                         <div className="text-sm font-black text-[#d4145a]">${pres.price} MXN</div>
-                        {currentUser.role === 'vendedor' && (
-                          <div className="text-[10px] text-[#b3925d] font-semibold">
-                            Mayoreo: ${pres.wholesalePrice} (+${pres.price - (pres.wholesalePrice || 0)})
-                          </div>
-                        )}
                       </button>
                     );
                   })}
@@ -220,7 +215,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 className="w-full h-9 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                Atender o cotizar por WhatsApp (+52 33 1071 1718)
+                Atender o cotizar por WhatsApp (+52 000 000 0000)
               </button>
             </div>
 

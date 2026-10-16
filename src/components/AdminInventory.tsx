@@ -15,6 +15,9 @@ import {
   Check,
   PlusCircle,
   Sparkles,
+  AlertCircle,
+  Truck,
+  Save,
 } from 'lucide-react';
 
 export const AdminInventory: React.FC = () => {
@@ -25,9 +28,11 @@ export const AdminInventory: React.FC = () => {
     updateProduct,
     deleteProduct,
     clients,
+    shippingRates,
+    updateShippingRate,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'users'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'shipping' | 'users'>('inventory');
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
 
@@ -49,6 +54,13 @@ export const AdminInventory: React.FC = () => {
 
   // Edit Product Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [pushSentNotice, setPushSentNotice] = useState<string | null>(null);
+
+  // Image validation states
+  const [isAddImageValid, setIsAddImageValid] = useState<boolean>(true);
+  const [addImageError, setAddImageError] = useState<string | null>(null);
+  const [isEditImageValid, setIsEditImageValid] = useState<boolean>(true);
+  const [editImageError, setEditImageError] = useState<string | null>(null);
 
   // Filter products
   const filteredProducts = products.filter(p => {
@@ -74,6 +86,16 @@ export const AdminInventory: React.FC = () => {
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newCode.trim()) return;
+
+    if (!newImageUrl.trim()) {
+      alert('Por favor sube o selecciona una fotografía para el producto.');
+      return;
+    }
+
+    if (!isAddImageValid) {
+      alert(addImageError || 'La imagen no cumple con las restricciones de formato o tamaño (máx. 5 MB).');
+      return;
+    }
 
     const wholesale = Math.round(newPrice * 0.65);
     const pres: ProductPresentation = {
@@ -108,6 +130,9 @@ export const AdminInventory: React.FC = () => {
     addProduct(newProd);
     setIsAddProductModalOpen(false);
 
+    setPushSentNotice(`✓ ¡Producto "${newProd.name}" publicado! Se ha emitido una alerta push al Centro de Notificaciones de las vendedoras.`);
+    setTimeout(() => setPushSentNotice(null), 5000);
+
     // Reset fields
     setNewCode('');
     setNewName('');
@@ -122,13 +147,30 @@ export const AdminInventory: React.FC = () => {
   const handleOpenEdit = (product: Product) => {
     // Clone product for local editing
     setEditingProduct(JSON.parse(JSON.stringify(product)));
+    setIsEditImageValid(true);
+    setEditImageError(null);
   };
 
   const handleSaveEditedProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
+
+    if (!editingProduct.imageUrl.trim()) {
+      alert('El producto debe tener una fotografía asignada.');
+      return;
+    }
+
+    if (!isEditImageValid) {
+      alert(editImageError || 'La imagen no cumple con las restricciones de formato o tamaño (máx. 5 MB).');
+      return;
+    }
+
     updateProduct(editingProduct);
+    const prodName = editingProduct.name;
     setEditingProduct(null);
+
+    setPushSentNotice(`✓ ¡Cambios en "${prodName}" guardados! Notificación push enviada a las vendedoras.`);
+    setTimeout(() => setPushSentNotice(null), 5000);
   };
 
   const handleDeleteProduct = (productId: string, productName: string) => {
@@ -213,6 +255,22 @@ export const AdminInventory: React.FC = () => {
         </div>
       </div>
 
+      {/* Admin Push Alert Sent Confirmation Banner */}
+      {pushSentNotice && (
+        <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-r from-[#d4145a]/10 via-[#ecd08c]/20 to-[#b3925d]/20 border border-[#b3925d]/50 text-[#141211] flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#d4145a] shrink-0" />
+            <span className="font-bold">{pushSentNotice}</span>
+          </div>
+          <button
+            onClick={() => setPushSentNotice(null)}
+            className="text-zinc-500 hover:text-zinc-800 p-1 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="mt-6 flex border-b border-zinc-200 gap-4">
         <button
@@ -224,7 +282,19 @@ export const AdminInventory: React.FC = () => {
           }`}
         >
           <Package className="w-4 h-4" />
-          Control de Inventario & Edición ({products.length} productos)
+          Control de Inventario & Edición ({products.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('shipping')}
+          className={`pb-3 font-cinzel text-xs sm:text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${
+            activeTab === 'shipping'
+              ? 'border-[#d4145a] text-[#d4145a]'
+              : 'border-transparent text-zinc-400 hover:text-zinc-700'
+          }`}
+        >
+          <Truck className="w-4 h-4" />
+          Costos de Envíos / Paqueterías ({shippingRates.length})
         </button>
 
         <button
@@ -466,6 +536,144 @@ export const AdminInventory: React.FC = () => {
         </div>
       )}
 
+      {/* ================= TAB: COSTOS DE ENVÍOS / PAQUETERÍAS ================= */}
+      {activeTab === 'shipping' && (
+        <div className="mt-6 space-y-5">
+          <div className="bg-[#faf8f5] p-5 rounded-3xl border border-[#b3925d]/30">
+            <div className="flex items-center gap-2 mb-1">
+              <Truck className="w-5 h-5 text-[#d4145a]" />
+              <h3 className="font-cinzel text-base font-bold text-[#141211]">
+                Configuración Oficial de Tarifas de Envíos Nacionales
+              </h3>
+            </div>
+            <p className="text-xs text-zinc-600 max-w-2xl">
+              Ajusta los costos base (hasta 1.0 kg), precio por kilogramo adicional y tiempos de entrega estimados para cada paquetería autorizada. Los cambios se reflejarán inmediatamente en la cotización de los clientes al pagar.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {shippingRates.map(rate => (
+              <div
+                key={rate.carrier}
+                className={`p-5 rounded-3xl bg-white border transition-all ${
+                  rate.active
+                    ? 'border-[#b3925d]/40 shadow-sm'
+                    : 'border-zinc-200 opacity-60 bg-zinc-50'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#141211] to-[#2c2622] text-[#ecd08c] flex items-center justify-center font-bold text-xs shadow-xs">
+                      {rate.carrier.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-cinzel font-bold text-sm text-[#141211]">
+                        {rate.carrier}
+                      </h4>
+                      <span className="text-[10px] text-zinc-400 block">{rate.serviceName}</span>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
+                    <span className="text-[11px] text-zinc-500">
+                      {rate.active ? 'Habilitada' : 'Inactiva'}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={rate.active}
+                      onChange={e => {
+                        updateShippingRate(rate.carrier, { active: e.target.checked });
+                        setPushSentNotice(`Estado de ${rate.carrier} actualizado.`);
+                        setTimeout(() => setPushSentNotice(null), 3500);
+                      }}
+                      className="w-4 h-4 accent-[#d4145a] rounded cursor-pointer"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
+                      Costo Base (Hasta 1 kg):
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-zinc-400">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={rate.baseCost}
+                        onChange={e =>
+                          updateShippingRate(rate.carrier, { baseCost: Math.max(0, Number(e.target.value)) })
+                        }
+                        className="w-full pl-7 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl font-bold text-zinc-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
+                      Costo por Kg Extra:
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-zinc-400">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={rate.extraKgCost}
+                        onChange={e =>
+                          updateShippingRate(rate.carrier, { extraKgCost: Math.max(0, Number(e.target.value)) })
+                        }
+                        className="w-full pl-7 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl font-bold text-zinc-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
+                      Tiempo Estimado de Entrega:
+                    </label>
+                    <input
+                      type="text"
+                      value={rate.estimatedDays}
+                      onChange={e =>
+                        updateShippingRate(rate.carrier, { estimatedDays: e.target.value })
+                      }
+                      className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#d4145a]"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-500">
+                  <span>Ejemplo para paquete de 3.5 kg:</span>
+                  <span className="font-bold text-[#d4145a]">
+                    ${Math.round(rate.baseCost + 2.5 * rate.extraKgCost)} MXN
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-[#b3925d]/30 text-xs flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600" />
+              <span className="text-zinc-700">
+                Los cambios se guardan automáticamente en tiempo real en la base de datos local del portal.
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setPushSentNotice('✓ ¡Tarifas de envío actualizadas exitosamente para toda la República!');
+                setTimeout(() => setPushSentNotice(null), 4000);
+              }}
+              className="px-4 py-2 rounded-xl bg-[#141211] hover:bg-[#d4145a] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Confirmar Tarifas</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ================= MODAL: AGREGAR PRODUCTO AL CATÁLOGO ================= */}
       {isAddProductModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
@@ -490,10 +698,14 @@ export const AdminInventory: React.FC = () => {
 
             <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
               
-              {/* Image Uploader Component */}
+              {/* Image Uploader Component with strict validations */}
               <ImageUploader
                 value={newImageUrl}
                 onChange={setNewImageUrl}
+                onValidationChange={(isValid, error) => {
+                  setIsAddImageValid(isValid);
+                  setAddImageError(error || null);
+                }}
                 label="Fotografía del Producto (Subir archivo o seleccionar de galería)"
               />
 
@@ -659,6 +871,19 @@ export const AdminInventory: React.FC = () => {
                 </div>
               </div>
 
+              {/* Visual validation alert message for image */}
+              {addImageError ? (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span className="font-medium">{addImageError}</span>
+                </div>
+              ) : !newImageUrl.trim() ? (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Se requiere cargar una fotografía válida para publicar el producto en el catálogo.</span>
+                </div>
+              ) : null}
+
               {/* Submit Button */}
               <div className="pt-2 flex gap-3">
                 <button
@@ -670,7 +895,8 @@ export const AdminInventory: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-xl bg-[#d4145a] hover:bg-[#b80f4c] text-white font-bold uppercase tracking-wider shadow-lg shadow-[#d4145a]/25 transition-all"
+                  disabled={!isAddImageValid || !newImageUrl.trim()}
+                  className="flex-1 py-3 rounded-xl bg-[#d4145a] hover:bg-[#b80f4c] text-white font-bold uppercase tracking-wider shadow-lg shadow-[#d4145a]/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Guardar y Publicar en Catálogo
                 </button>
@@ -712,10 +938,14 @@ export const AdminInventory: React.FC = () => {
 
             <form onSubmit={handleSaveEditedProduct} className="space-y-4 text-xs">
               
-              {/* Photo Uploader with Preview */}
+              {/* Photo Uploader with strict validations & preview */}
               <ImageUploader
                 value={editingProduct.imageUrl}
                 onChange={(newUrl) => setEditingProduct({ ...editingProduct, imageUrl: newUrl })}
+                onValidationChange={(isValid, error) => {
+                  setIsEditImageValid(isValid);
+                  setEditImageError(error || null);
+                }}
                 label="Fotografía del Producto (Actualizar foto de bodega o catálogo)"
               />
 
@@ -875,6 +1105,19 @@ export const AdminInventory: React.FC = () => {
                 </div>
               </div>
 
+              {/* Visual validation alert message for image in edit mode */}
+              {editImageError ? (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span className="font-medium">{editImageError}</span>
+                </div>
+              ) : !editingProduct.imageUrl.trim() ? (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>El producto debe contar con una fotografía válida en el catálogo.</span>
+                </div>
+              ) : null}
+
               {/* Actions */}
               <div className="pt-4 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
@@ -896,7 +1139,8 @@ export const AdminInventory: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#141211] hover:bg-[#25201d] text-[#ecd08c] font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5"
+                    disabled={!isEditImageValid || !editingProduct.imageUrl.trim()}
+                    className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#141211] hover:bg-[#25201d] text-[#ecd08c] font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Check className="w-4 h-4" />
                     Guardar Cambios

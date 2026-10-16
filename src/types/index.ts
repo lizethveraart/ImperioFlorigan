@@ -1,4 +1,4 @@
-export type UserRole = 'vendedor' | 'cliente' | 'admin';
+export type UserRole = 'cliente' | 'admin' | 'vendedor';
 
 export interface User {
   id: string;
@@ -6,10 +6,14 @@ export interface User {
   email: string;
   role: UserRole;
   phone?: string;
-  vendorLevel?: 'Emperatriz Bronce' | 'Emperatriz Plata' | 'Emperatriz Oro' | 'Emperatriz Diamante';
-  commissionRate?: number; // e.g. 0.35 (35%)
   city?: string;
   state?: string;
+  address?: string;
+  postalCode?: string;
+  authProvider?: 'google' | 'email';
+  savedCart?: CartItem[];
+  vendorLevel?: 'Emperatriz Bronce' | 'Emperatriz Plata' | 'Emperatriz Oro' | 'Emperatriz Diamante';
+  commissionRate?: number;
   creditLimit?: number;
   availableCredit?: number;
 }
@@ -66,10 +70,19 @@ export interface ClientProfile {
   lastPurchaseDate?: string;
 }
 
-export type PaymentMethodType = 'card' | 'spei' | 'oxxo' | 'florigan_credit';
+export type PaymentMethodType = 'spei' | 'oxxo' | 'whatsapp' | 'card' | 'florigan_credit';
+
+export interface ShippingCarrierRate {
+  carrier: 'Estafeta' | 'FedEx Express' | 'RedPack Terrestre' | 'DHL Express';
+  serviceName: string;
+  baseCost: number;
+  extraKgCost: number;
+  estimatedDays: string;
+  active: boolean;
+}
 
 export interface ShippingQuote {
-  carrier: 'Estafeta' | 'FedEx Express' | 'RedPack Terrestre' | 'DHL Express' | 'Punto Matriz Guadalajara';
+  carrier: 'Estafeta' | 'FedEx Express' | 'RedPack Terrestre' | 'DHL Express' | 'Punto Matriz Irapuato' | 'Punto Matriz Guadalajara';
   serviceName: string;
   cost: number;
   estimatedDays: string;
@@ -116,14 +129,27 @@ export interface Order {
   notes?: string;
 }
 
+export type NotificationType =
+  | 'stock_alert'
+  | 'offer'
+  | 'order_update'
+  | 'inventory_update'
+  | 'new_product'
+  | 'system';
+
 export interface AppNotification {
   id: string;
   title: string;
   message: string;
-  type: 'stock_alert' | 'offer' | 'order_update' | 'system';
+  type: NotificationType;
   timestamp: string;
   read: boolean;
   actionUrl?: string;
+  productId?: string;
+  productName?: string;
+  targetRole?: UserRole | 'all';
+  adminAuthor?: string;
+  isPushSent?: boolean;
 }
 
 export interface MonthlyReportData {

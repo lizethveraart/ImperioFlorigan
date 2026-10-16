@@ -187,7 +187,7 @@ export function exportMonthlyReportPDF(report: MonthlyReportData, vendorName?: s
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(120, 120, 120);
-  doc.text('Florigan® Desde 1975 • Envíos a todo México con cobertura asegurada • Tel. (33) 1071 1718', 14, footerY + 5);
+  doc.text('Florigan® Desde 1975 • Envíos a todo México con cobertura asegurada • Irapuato, Gto. • Tel. 000 000 0000', 14, footerY + 5);
   doc.text('Documento oficial generado por la Plataforma Imperio Florigan App.', pageWidth - 14, footerY + 5, { align: 'right' });
 
   // Save PDF
@@ -220,7 +220,7 @@ export function exportOrderReceiptPDF(order: Order) {
   doc.setFontSize(8.5);
   doc.setTextColor(240, 240, 240);
   doc.text('REMISIÓN Y NOTA DE PEDIDO NACIONAL', 14, 23);
-  doc.text('FLORIGAN HERBOLARIA Y BELLEZA • GUADALAJARA, JAL.', 14, 29);
+  doc.text('FLORIGAN HERBOLARIA Y BELLEZA • IRAPUATO, GTO.', 14, 29);
 
   // Order Number Box
   doc.setFont('helvetica', 'bold');
@@ -335,7 +335,7 @@ export function exportOrderReceiptPDF(order: Order) {
   doc.setTextColor(180, 20, 40);
   doc.text(`MÉTODO DE PAGO: ${order.paymentMethod.toUpperCase()} | ESTATUS: ${order.paymentStatus}`, 18, y + 6);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Referencia: ${order.paymentReference || 'N/A'} - Facturación o dudas: WhatsApp (+52) 33 1071 1718`, 18, y + 10.5);
+  doc.text(`Referencia: ${order.paymentReference || 'N/A'} - Facturación o dudas: WhatsApp (+52) 000 000 0000 • Irapuato, Gto.`, 18, y + 10.5);
 
   const filename = `Nota_${order.orderNumber}.pdf`;
   doc.save(filename);
