@@ -16,16 +16,16 @@ export const Footer: React.FC = () => {
   const { setCurrentTab, setIsAdminAuthOpen, setIsAuthOpen, currentUser } = useApp();
 
   return (
-    <footer className="bg-[#141211] text-white border-t border-[#b3925d]/40 relative overflow-hidden mt-12 pb-24 md:pb-12">
+    <footer className="bg-[#141211] text-white border-t border-[#b3925d]/40 relative overflow-hidden mt-12 pb-32 md:pb-12 max-w-full">
       {/* Decorative Golden Flower Watermark */}
-      <div className="absolute right-[-30px] bottom-[-30px] text-[200px] text-[#b3925d]/5 select-none pointer-events-none font-serif leading-none">
+      <div className="absolute right-[-20px] bottom-[-20px] text-[160px] sm:text-[200px] text-[#b3925d]/5 select-none pointer-events-none font-serif leading-none">
         ✿
       </div>
 
       {/* Golden Highlight Accent Strip */}
       <div className="h-1 bg-gradient-to-r from-[#8c6e3d] via-[#ecd08c] to-[#d4145a]" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-10 sm:pt-12 pb-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           
           {/* Col 1: Brand & Heritage */}

@@ -48,11 +48,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         <div className="grid grid-cols-1 md:grid-cols-2">
           
           {/* Product Image & Badges */}
-          <div className="relative bg-[#fcfbfa] flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-[#eee]">
+          <div className="relative bg-[#fcfbfa] flex items-center justify-center p-4 sm:p-6 border-b md:border-b-0 md:border-r border-[#eee]">
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="max-h-72 w-auto object-contain rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+              className="max-h-48 sm:max-h-72 w-auto object-contain rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
             />
 
             {/* Badges */}

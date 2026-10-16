@@ -23,7 +23,7 @@ const AppContent: React.FC = () => {
   const isAdmin = currentUser.role === 'admin' && currentUser.email === 'ventas@imperioflorigan.com';
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#1a1715] flex flex-col font-['Montserrat',sans-serif]">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#faf8f5] text-[#1a1715] flex flex-col font-['Montserrat',sans-serif]">
       {/* Real-time Push Alert Banner */}
       <PushToastBanner />
 

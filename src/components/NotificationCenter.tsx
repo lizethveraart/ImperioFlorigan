@@ -91,7 +91,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
+      <div className="absolute inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
         <div className="w-screen max-w-md bg-[#181615] border-l border-[#b3925d]/30 text-white flex flex-col shadow-2xl">
           
           {/* Header */}

@@ -70,7 +70,7 @@ export const NavigationDrawer: React.FC = () => {
       />
 
       {/* Slide-over Drawer (Right side) */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
         <div className="w-screen max-w-sm bg-[#141211] text-white border-l border-[#b3925d]/40 shadow-2xl flex flex-col justify-between">
           
           {/* Header */}

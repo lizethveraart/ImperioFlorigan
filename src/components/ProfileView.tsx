@@ -201,13 +201,13 @@ export const ProfileView: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 font-['Montserrat',sans-serif]">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 sm:pb-24 font-['Montserrat',sans-serif]">
       
       {/* Feminine & Imperial Client Header Card */}
-      <div className="bg-white rounded-3xl border border-[#ecd0be] overflow-hidden shadow-sm mb-6">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#ecd0be] overflow-hidden shadow-xs mb-6">
         
         {/* Soft Blush Pink & Rose Gold Banner */}
-        <div className="relative p-6 sm:p-8 bg-gradient-to-r from-[#fff7f2] via-[#fbf0ea] to-[#f7e6dc] border-b border-[#ecd0be]">
+        <div className="relative p-4 sm:p-8 bg-gradient-to-r from-[#fff7f2] via-[#fbf0ea] to-[#f7e6dc] border-b border-[#ecd0be]">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             
             {/* Avatar */}

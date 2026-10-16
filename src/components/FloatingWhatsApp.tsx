@@ -20,10 +20,19 @@ export const FloatingWhatsApp: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end">
-      {/* Expanded Quick Message Bubble */}
+    <>
+      {/* Backdrop on mobile when bubble is open */}
       {isOpen && (
-        <div className="mb-3 w-72 sm:w-80 bg-white rounded-3xl shadow-2xl border border-emerald-200 overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200 text-[#1a1715]">
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-39 sm:hidden"
+        />
+      )}
+
+      <div className="fixed bottom-18 sm:bottom-20 md:bottom-6 right-3 sm:right-6 z-40 flex flex-col items-end">
+        {/* Expanded Quick Message Bubble */}
+        {isOpen && (
+          <div className="mb-2 sm:mb-3 w-[calc(100vw-1.5rem)] max-w-sm sm:w-80 bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-emerald-200 overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200 text-[#1a1715]">
           {/* Header */}
           <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -90,17 +99,18 @@ export const FloatingWhatsApp: React.FC = () => {
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-2xl shadow-emerald-600/40 hover:scale-105 active:scale-95 transition-all border-2 border-white/60 relative"
+          className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-xl shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all border-2 border-white/80 relative"
           title="Atención directa por WhatsApp"
         >
-          <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-25" />
+          <span className="hidden sm:inline absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-25" />
           {isOpen ? (
-            <X className="w-6 h-6 text-white relative z-10" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white relative z-10" />
           ) : (
-            <MessageCircle className="w-7 h-7 text-white relative z-10" />
+            <MessageCircle className="w-5 h-5 sm:w-7 sm:h-7 text-white relative z-10" />
           )}
         </button>
       </div>
     </div>
+    </>
   );
 };

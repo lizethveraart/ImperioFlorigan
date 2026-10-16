@@ -15,7 +15,7 @@ export const BottomNav: React.FC = () => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141211]/95 backdrop-blur-lg border-t border-[#b3925d]/30 z-40 px-2 py-1 shadow-2xl">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 max-w-full overflow-hidden bg-[#141211]/95 backdrop-blur-lg border-t border-[#b3925d]/30 z-40 px-2 pt-1 pb-1.5 shadow-2xl">
       <div className="flex items-center justify-around h-15">
         
         {/* Catálogo */}

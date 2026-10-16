@@ -22,7 +22,7 @@ export const PushToastBanner: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-4 right-4 sm:top-5 sm:right-6 z-50 max-w-sm sm:max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
+    <div className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:w-full z-50 sm:max-w-md animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
       <div className="bg-[#141211] border-2 border-[#b3925d] text-white p-4 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-xl">
         
         {/* Glow accent bar */}
